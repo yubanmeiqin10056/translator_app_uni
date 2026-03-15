@@ -3,6 +3,8 @@
  * 支持百度翻译、有道翻译和离线翻译
  */
 
+import { showError, withRetry, showLoading, hideLoading, ErrorTypes, detectErrorType } from './errorHandler.js'
+
 // 百度翻译 API 配置
 const BAIDU_CONFIG = {
   appId: '',
@@ -59,15 +61,26 @@ export async function translate(text, from = 'auto', to = 'zh') {
     return translateOffline(text, from, to)
   }
 
-  // 在线翻译
+  // 在线翻译（带重试）
   try {
-    const result = await translateOnline(text, from, to)
+    const result = await withRetry(
+      () => translateOnline(text, from, to),
+      { maxRetries: 2, delay: 500 }
+    )
     // 缓存翻译结果
     saveToCache(cacheKey, result)
     return result
   } catch (e) {
-    // 在线翻译失败，尝试离线翻译
-    console.warn('在线翻译失败，尝试离线:', e)
+    // 在线翻译失败，显示错误并尝试离线翻译
+    const errorResult = await showError(e, { 
+      title: '翻译失败',
+      showRetry: true 
+    })
+    
+    if (errorResult.retry) {
+      return translate(text, from, to)
+    }
+    
     return translateOffline(text, from, to)
   }
 }
