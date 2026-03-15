@@ -136,6 +136,7 @@
 import CustomTabbar from '@/components/custom-tabbar.vue'
 import { loadBaiduConfig, configureBaidu, setOfflineMode } from '@/utils/translator.js'
 import { loadBaiduOCRConfig, configureBaiduOCR } from '@/utils/ocr.js'
+import { storeApiKey, getApiKey, deleteApiKey, secureSet, secureGet } from '@/utils/security.js'
 
 export default {
   components: {

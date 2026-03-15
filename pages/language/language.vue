@@ -52,6 +52,7 @@
 
 <script>
 import { importDictionary, removeDictionary } from '@/utils/translator.js'
+import { verifyLanguagePack, createSignedPack } from '@/utils/security.js'
 
 export default {
   data() {
@@ -89,10 +90,36 @@ export default {
           pack.progress = 100
           clearInterval(interval)
           
-          // 导入离线词典（示例数据）
+          // 创建签名语言包
           const [from, to] = pack.id.split('-')
           const sampleDict = this.generateSampleDictionary(from, to)
+          const signedPack = createSignedPack(pack.id, '1.0.0', sampleDict)
+          
+          // 验证完整性
+          const verification = verifyLanguagePack(signedPack)
+          if (!verification.valid) {
+            pack.downloading = false
+            uni.showToast({
+              title: '语言包验证失败',
+              icon: 'error'
+            })
+            return
+          }
+          
+          // 导入离线词典
           importDictionary(from, to, sampleDict)
+          
+          // 保存签名信息
+          const packInfo = {
+            id: pack.id,
+            version: verification.version,
+            wordCount: verification.wordCount,
+            hash: signedPack.hash,
+            installedAt: Date.now()
+          }
+          const packInfos = uni.getStorageSync('pack_infos') || {}
+          packInfos[pack.id] = packInfo
+          uni.setStorageSync('pack_infos', packInfos)
           
           // 标记为已安装
           pack.downloading = false
