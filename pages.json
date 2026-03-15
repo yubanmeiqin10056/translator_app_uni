@@ -25,6 +25,14 @@
       }
     },
     {
+      "path": "pages/history/history",
+      "style": {
+        "navigationBarTitleText": "翻译历史",
+        "navigationBarBackgroundColor": "#6366F1",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
       "path": "pages/settings/settings",
       "style": {
         "navigationBarTitleText": "设置",

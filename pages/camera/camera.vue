@@ -195,6 +195,9 @@ export default {
           // 翻译
           const targetLang = this.languages[this.targetLangIndex].code
           this.translatedText = await translate(this.recognizedText, sourceLang, targetLang)
+          
+          // 保存到历史记录
+          this.saveToHistory()
         }
       } catch (e) {
         uni.showToast({
@@ -204,6 +207,24 @@ export default {
       } finally {
         this.isProcessing = false
       }
+    },
+    saveToHistory() {
+      const historyItem = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        source: this.recognizedText,
+        target: this.translatedText,
+        sourceLang: this.languages[this.sourceLangIndex].name,
+        targetLang: this.languages[this.targetLangIndex].name,
+        type: 'image',
+        time: Date.now()
+      }
+      
+      const history = uni.getStorageSync('translation_history') || []
+      history.unshift(historyItem)
+      if (history.length > 100) {
+        history.splice(100)
+      }
+      uni.setStorageSync('translation_history', history)
     },
     getOcrLang(code) {
       const langMap = {

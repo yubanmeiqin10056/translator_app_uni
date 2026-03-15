@@ -173,16 +173,18 @@ export default {
     },
     saveToHistory() {
       const historyItem = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         source: this.inputText,
         target: this.outputText,
-        sourceLang: this.languages[this.sourceLangIndex].code,
-        targetLang: this.languages[this.targetLangIndex].code,
+        sourceLang: this.languages[this.sourceLangIndex].name,
+        targetLang: this.languages[this.targetLangIndex].name,
+        type: 'text',
         time: Date.now()
       }
       
       this.history.unshift(historyItem)
-      if (this.history.length > 50) {
-        this.history = this.history.slice(0, 50)
+      if (this.history.length > 100) {
+        this.history = this.history.slice(0, 100)
       }
       
       uni.setStorageSync('translation_history', this.history)
