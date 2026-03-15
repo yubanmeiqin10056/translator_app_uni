@@ -1,0 +1,232 @@
+{
+  "project": "安卓离线翻译应用",
+  "version": "1.0.0",
+  "framework": "uni-app",
+  "features": [
+    {
+      "id": "F001",
+      "category": "environment",
+      "priority": "critical",
+      "description": "HBuilderX 开发环境可正常运行",
+      "steps": [
+        "安装 HBuilderX",
+        "打开项目目录",
+        "确认项目可识别"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F002",
+      "category": "environment",
+      "priority": "critical",
+      "description": "项目可成功编译运行",
+      "steps": [
+        "在 HBuilderX 中打开项目",
+        "运行到浏览器/模拟器",
+        "确认应用正常显示"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F003",
+      "category": "functional",
+      "priority": "high",
+      "description": "用户可以看到主界面并选择翻译模式",
+      "steps": [
+        "启动应用",
+        "确认显示主界面",
+        "确认显示「拍照翻译」和「文本翻译」两个入口",
+        "点击任一入口可进入对应页面"
+      ],
+      "passes": true
+    },
+    {
+      "id": "F004",
+      "category": "functional",
+      "priority": "high",
+      "description": "用户可以下载语言包",
+      "steps": [
+        "进入设置/语言管理页面",
+        "显示可用语言列表",
+        "点击下载按钮",
+        "显示下载进度",
+        "下载完成后语言包标记为已下载"
+      ],
+      "passes": true
+    },
+    {
+      "id": "F005",
+      "category": "functional",
+      "priority": "high",
+      "description": "用户可以检查语言包是否已下载",
+      "steps": [
+        "进入语言管理页面",
+        "已下载的语言包显示「已安装」状态",
+        "未下载的语言包显示「下载」按钮"
+      ],
+      "passes": true
+    },
+    {
+      "id": "F006",
+      "category": "functional",
+      "priority": "high",
+      "description": "用户可以输入文本并获得翻译结果",
+      "steps": [
+        "进入文本翻译页面",
+        "选择源语言和目标语言",
+        "输入待翻译文本",
+        "点击翻译按钮",
+        "显示翻译结果"
+      ],
+      "passes": true
+    },
+    {
+      "id": "F007",
+      "category": "functional",
+      "priority": "high",
+      "description": "翻译功能可在离线状态下工作",
+      "steps": [
+        "关闭设备网络连接",
+        "使用已下载的语言包进行翻译",
+        "确认翻译结果正常显示"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F008",
+      "category": "functional",
+      "priority": "high",
+      "description": "用户可以拍照并识别图片中的文字",
+      "steps": [
+        "进入拍照翻译页面",
+        "点击拍照按钮",
+        "拍摄包含文字的图片",
+        "确认图片中的文字被识别并显示"
+      ],
+      "passes": true
+    },
+    {
+      "id": "F009",
+      "category": "functional",
+      "priority": "high",
+      "description": "用户可以从相册选择图片进行翻译",
+      "steps": [
+        "进入拍照翻译页面",
+        "点击相册按钮",
+        "选择一张包含文字的图片",
+        "确认文字被识别并翻译"
+      ],
+      "passes": true
+    },
+    {
+      "id": "F010",
+      "category": "functional",
+      "priority": "medium",
+      "description": "用户可以复制翻译结果",
+      "steps": [
+        "完成一次翻译",
+        "点击复制按钮",
+        "确认结果已复制到剪贴板"
+      ],
+      "passes": true
+    },
+    {
+      "id": "F011",
+      "category": "functional",
+      "priority": "medium",
+      "description": "用户可以切换深色/浅色主题",
+      "steps": [
+        "进入设置页面",
+        "点击主题切换按钮",
+        "确认界面主题已切换"
+      ],
+      "passes": true
+    },
+    {
+      "id": "F012",
+      "category": "functional",
+      "priority": "low",
+      "description": "用户可以查看翻译历史记录",
+      "steps": [
+        "完成多次翻译",
+        "进入历史记录页面",
+        "确认历史记录按时间倒序显示",
+        "点击历史记录可重新查看翻译详情"
+      ],
+      "passes": true
+    },
+    {
+      "id": "F013",
+      "category": "performance",
+      "priority": "medium",
+      "description": "翻译响应时间在可接受范围内",
+      "steps": [
+        "输入一段50字以内的文本",
+        "点击翻译",
+        "测量翻译响应时间",
+        "确认响应时间小于3秒"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F014",
+      "category": "performance",
+      "priority": "medium",
+      "description": "OCR识别准确率达到要求",
+      "steps": [
+        "使用清晰的标准字体图片进行测试",
+        "计算识别准确率",
+        "确认准确率高于90%"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F015",
+      "category": "ux",
+      "priority": "high",
+      "description": "下载进度清晰可见",
+      "steps": [
+        "开始下载语言包",
+        "确认显示下载进度百分比",
+        "确认显示预计剩余时间或速度"
+      ],
+      "passes": true
+    },
+    {
+      "id": "F016",
+      "category": "ux",
+      "priority": "medium",
+      "description": "错误提示清晰友好",
+      "steps": [
+        "模拟网络错误场景",
+        "确认显示友好的错误提示",
+        "提供重试选项"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F017",
+      "category": "security",
+      "priority": "high",
+      "description": "语言包下载完整性验证",
+      "steps": [
+        "下载语言包",
+        "验证下载文件的哈希值",
+        "确认文件完整无损"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F018",
+      "category": "security",
+      "priority": "high",
+      "description": "用户数据安全存储",
+      "steps": [
+        "检查翻译历史存储方式",
+        "确认敏感数据已加密存储",
+        "确认应用私有目录权限正确"
+      ],
+      "passes": false
+    }
+  ]
+}

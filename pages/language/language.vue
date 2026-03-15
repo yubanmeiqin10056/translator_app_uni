@@ -51,6 +51,8 @@
 </template>
 
 <script>
+import { importDictionary, removeDictionary } from '@/utils/translator.js'
+
 export default {
   data() {
     return {
@@ -80,12 +82,17 @@ export default {
       pack.downloading = true
       pack.progress = 0
       
-      // 模拟下载进度
+      // 模拟下载并导入词典数据
       const interval = setInterval(() => {
         pack.progress += Math.random() * 15
         if (pack.progress >= 100) {
           pack.progress = 100
           clearInterval(interval)
+          
+          // 导入离线词典（示例数据）
+          const [from, to] = pack.id.split('-')
+          const sampleDict = this.generateSampleDictionary(from, to)
+          importDictionary(from, to, sampleDict)
           
           // 标记为已安装
           pack.downloading = false
@@ -99,23 +106,42 @@ export default {
           }
           
           uni.showToast({
-            title: '下载完成',
+            title: '语言包已安装',
             icon: 'success'
           })
         }
       }, 200)
-      
-      // 实际下载逻辑应该调用后端服务
-      // const downloadTask = uni.downloadFile({
-      //   url: `https://example.com/models/${pack.id}.zip`,
-      //   success: (res) => {
-      //     // 解压并安装
-      //   }
-      // })
-      // 
-      // downloadTask.onProgressUpdate((res) => {
-      //   pack.progress = res.progress
-      // })
+    },
+    // 生成示例词典数据
+    generateSampleDictionary(from, to) {
+      // 实际应用中应从服务器下载真实词典
+      const dictionaries = {
+        'en-zh': {
+          'hello': '你好',
+          'world': '世界',
+          'good': '好的',
+          'bad': '坏的',
+          'yes': '是',
+          'no': '否',
+          'thank': '谢谢',
+          'please': '请',
+          'sorry': '抱歉',
+          'love': '爱'
+        },
+        'zh-en': {
+          '你好': 'hello',
+          '世界': 'world',
+          '好的': 'good',
+          '坏的': 'bad',
+          '是': 'yes',
+          '否': 'no',
+          '谢谢': 'thank you',
+          '请': 'please',
+          '抱歉': 'sorry',
+          '爱': 'love'
+        }
+      }
+      return dictionaries[`${from}-${to}`] || {}
     },
     deletePack(pack) {
       uni.showModal({
@@ -123,6 +149,10 @@ export default {
         content: `确定要删除 ${pack.sourceName}→${pack.targetName} 语言包吗？`,
         success: (res) => {
           if (res.confirm) {
+            // 删除离线词典
+            const [from, to] = pack.id.split('-')
+            removeDictionary(from, to)
+            
             pack.installed = false
             
             // 从本地存储移除

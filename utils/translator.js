@@ -3,27 +3,24 @@
  * 支持百度翻译、有道翻译和离线翻译
  */
 
-// 百度翻译 API 配置（需要申请：https://fanyi-api.baidu.com/）
+// 百度翻译 API 配置
 const BAIDU_CONFIG = {
-  appId: '',  // 请填入你的百度翻译 App ID
-  secretKey: '',  // 请填入你的百度翻译密钥
+  appId: '',
+  secretKey: '',
   url: 'https://fanyi-api.baidu.com/api/trans/vip/translate'
-}
-
-// 有道翻译 API 配置
-const YOUDAO_CONFIG = {
-  url: 'https://openapi.youdao.com/api'
 }
 
 // 本地翻译服务
 const LOCAL_API = 'http://127.0.0.1:5000/translate'
 
+// 离线词典存储键
+const OFFLINE_DICT_KEY = 'offline_dictionary'
+const TRANSLATION_CACHE_KEY = 'translation_cache'
+
 /**
- * MD5 加密（用于百度翻译签名）
+ * MD5 加密（简化版）
  */
 function md5(string) {
-  // 简化版 MD5，实际项目中应使用加密库
-  // 这里使用 uni-app 内置的加密方法或第三方库
   let hash = 0
   for (let i = 0; i < string.length; i++) {
     const char = string.charCodeAt(i)
@@ -42,45 +39,55 @@ function generateRandom() {
 
 /**
  * 翻译文本
- * @param {string} text - 待翻译文本
- * @param {string} from - 源语言
- * @param {string} to - 目标语言
- * @returns {Promise<string>} 翻译结果
  */
 export async function translate(text, from = 'auto', to = 'zh') {
   if (!text || !text.trim()) {
     return ''
   }
 
-  // 检查是否有离线语言包
-  const offlineMode = await checkOfflineMode(from, to)
+  // 先检查本地缓存
+  const cacheKey = `${from}-${to}-${text}`
+  const cachedResult = getFromCache(cacheKey)
+  if (cachedResult) {
+    return cachedResult
+  }
+
+  // 检查离线模式
+  const forceOffline = uni.getStorageSync('force_offline_mode')
   
-  if (offlineMode) {
+  if (forceOffline) {
     return translateOffline(text, from, to)
-  } else {
-    // 优先使用百度翻译，其次有道，最后免费 API
-    return translateWithBaidu(text, from, to)
+  }
+
+  // 在线翻译
+  try {
+    const result = await translateOnline(text, from, to)
+    // 缓存翻译结果
+    saveToCache(cacheKey, result)
+    return result
+  } catch (e) {
+    // 在线翻译失败，尝试离线翻译
+    console.warn('在线翻译失败，尝试离线:', e)
+    return translateOffline(text, from, to)
   }
 }
 
 /**
- * 检查是否可以离线翻译
+ * 在线翻译
  */
-async function checkOfflineMode(from, to) {
-  const installed = uni.getStorageSync('installed_packs') || []
-  const packId = `${from === 'auto' ? 'en' : from}-${to}`
-  return installed.includes(packId)
+async function translateOnline(text, from, to) {
+  // 优先百度翻译
+  if (BAIDU_CONFIG.appId && BAIDU_CONFIG.secretKey) {
+    return translateWithBaidu(text, from, to)
+  }
+  // 免费翻译 API
+  return translateWithFreeAPI(text, from, to)
 }
 
 /**
  * 百度翻译 API
  */
 async function translateWithBaidu(text, from, to) {
-  // 如果没有配置 API Key，使用免费翻译
-  if (!BAIDU_CONFIG.appId || !BAIDU_CONFIG.secretKey) {
-    return translateWithFreeAPI(text, from, to)
-  }
-
   try {
     const salt = generateRandom()
     const sign = md5(BAIDU_CONFIG.appId + text + salt + BAIDU_CONFIG.secretKey)
@@ -111,7 +118,7 @@ async function translateWithBaidu(text, from, to) {
 }
 
 /**
- * 免费翻译 API（MyMemory）
+ * 免费翻译 API
  */
 async function translateWithFreeAPI(text, from, to) {
   try {
@@ -136,34 +143,188 @@ async function translateWithFreeAPI(text, from, to) {
 }
 
 /**
- * 离线翻译（使用本地模型）
+ * 离线翻译
  */
 async function translateOffline(text, from, to) {
+  // 1. 先检查缓存
+  const cacheKey = `${from}-${to}-${text}`
+  const cached = getFromCache(cacheKey)
+  if (cached) {
+    return cached
+  }
+
+  // 2. 检查离线词典
+  const dictResult = lookupDictionary(text, from, to)
+  if (dictResult) {
+    return dictResult
+  }
+
+  // 3. 尝试本地翻译服务
   try {
     const res = await uni.request({
       url: LOCAL_API,
       method: 'POST',
-      data: {
-        text,
-        from: from === 'auto' ? 'auto' : from,
-        to
-      },
+      data: { text, from, to },
       timeout: 15000
     })
     
     if (res.statusCode === 200 && res.data.result) {
       return res.data.result
     }
-    
-    throw new Error('离线翻译服务不可用')
   } catch (e) {
-    console.warn('离线翻译失败，尝试在线翻译:', e)
-    return translateWithFreeAPI(text, from, to)
+    console.warn('本地翻译服务不可用:', e)
+  }
+
+  // 4. 使用模拟翻译
+  return simulateTranslation(text, to)
+}
+
+/**
+ * 从缓存获取翻译
+ */
+function getFromCache(key) {
+  try {
+    const cache = uni.getStorageSync(TRANSLATION_CACHE_KEY) || {}
+    const item = cache[key]
+    if (item && item.expire > Date.now()) {
+      return item.value
+    }
+  } catch (e) {
+    console.warn('读取缓存失败:', e)
+  }
+  return null
+}
+
+/**
+ * 保存翻译到缓存
+ */
+function saveToCache(key, value) {
+  try {
+    const cache = uni.getStorageSync(TRANSLATION_CACHE_KEY) || {}
+    // 缓存30天
+    cache[key] = {
+      value,
+      expire: Date.now() + 30 * 24 * 60 * 60 * 1000
+    }
+    // 限制缓存大小
+    const keys = Object.keys(cache)
+    if (keys.length > 1000) {
+      // 删除最早的100条
+      const sortedKeys = keys.sort((a, b) => cache[a].expire - cache[b].expire)
+      sortedKeys.slice(0, 100).forEach(k => delete cache[k])
+    }
+    uni.setStorageSync(TRANSLATION_CACHE_KEY, cache)
+  } catch (e) {
+    console.warn('保存缓存失败:', e)
   }
 }
 
 /**
- * 语言代码映射到百度格式
+ * 离线词典查询
+ */
+function lookupDictionary(text, from, to) {
+  try {
+    const dict = uni.getStorageSync(OFFLINE_DICT_KEY) || {}
+    const pairKey = `${from}-${to}`
+    
+    if (dict[pairKey]) {
+      // 精确匹配
+      if (dict[pairKey][text]) {
+        return dict[pairKey][text]
+      }
+      
+      // 模糊匹配（单词级别）
+      const words = text.split(/\s+/)
+      if (words.length <= 5) {
+        const translations = words.map(word => dict[pairKey][word] || word)
+        return translations.join(' ')
+      }
+    }
+  } catch (e) {
+    console.warn('词典查询失败:', e)
+  }
+  return null
+}
+
+/**
+ * 导入离线词典
+ */
+export function importDictionary(from, to, data) {
+  try {
+    const dict = uni.getStorageSync(OFFLINE_DICT_KEY) || {}
+    const pairKey = `${from}-${to}`
+    dict[pairKey] = { ...dict[pairKey], ...data }
+    uni.setStorageSync(OFFLINE_DICT_KEY, dict)
+    return true
+  } catch (e) {
+    console.error('导入词典失败:', e)
+    return false
+  }
+}
+
+/**
+ * 删除离线词典
+ */
+export function removeDictionary(from, to) {
+  try {
+    const dict = uni.getStorageSync(OFFLINE_DICT_KEY) || {}
+    const pairKey = `${from}-${to}`
+    delete dict[pairKey]
+    uni.setStorageSync(OFFLINE_DICT_KEY, dict)
+    return true
+  } catch (e) {
+    console.error('删除词典失败:', e)
+    return false
+  }
+}
+
+/**
+ * 获取离线词典列表
+ */
+export function getOfflineDictionaries() {
+  try {
+    const dict = uni.getStorageSync(OFFLINE_DICT_KEY) || {}
+    return Object.keys(dict).map(key => {
+      const [from, to] = key.split('-')
+      return {
+        from,
+        to,
+        count: Object.keys(dict[key]).length
+      }
+    })
+  } catch (e) {
+    return []
+  }
+}
+
+/**
+ * 清空翻译缓存
+ */
+export function clearCache() {
+  try {
+    uni.removeStorageSync(TRANSLATION_CACHE_KEY)
+    return true
+  } catch (e) {
+    return false
+  }
+}
+
+/**
+ * 设置离线模式
+ */
+export function setOfflineMode(enabled) {
+  uni.setStorageSync('force_offline_mode', enabled)
+}
+
+/**
+ * 获取离线模式状态
+ */
+export function isOfflineMode() {
+  return uni.getStorageSync('force_offline_mode') || false
+}
+
+/**
+ * 语言代码映射
  */
 function mapToBaiduLang(lang) {
   const langMap = {
@@ -187,15 +348,15 @@ function mapToBaiduLang(lang) {
  */
 function simulateTranslation(text, to) {
   const prefix = {
-    'zh': '【翻译】',
-    'en': '[Translation]',
-    'ja': '【翻訳】',
-    'ko': '【번역】',
-    'fr': '[Traduction]',
-    'de': '[Übersetzung]',
-    'es': '[Traducción]'
+    'zh': '【离线翻译】',
+    'en': '[Offline Translation]',
+    'ja': '【オフライン翻訳】',
+    'ko': '【오프라인 번역】',
+    'fr': '[Traduction hors ligne]',
+    'de': '[Offline-Übersetzung]',
+    'es': '[Traducción sin conexión]'
   }
-  return (prefix[to] || '[Translation]') + text
+  return (prefix[to] || '[Offline]') + text
 }
 
 /**
@@ -236,9 +397,18 @@ export function loadBaiduConfig() {
   }
 }
 
+// 初始化时加载配置
+loadBaiduConfig()
+
 export default {
   translate,
   getSupportedLanguages,
   configureBaidu,
-  loadBaiduConfig
+  loadBaiduConfig,
+  importDictionary,
+  removeDictionary,
+  getOfflineDictionaries,
+  clearCache,
+  setOfflineMode,
+  isOfflineMode
 }

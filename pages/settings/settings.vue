@@ -134,7 +134,7 @@
 
 <script>
 import CustomTabbar from '@/components/custom-tabbar.vue'
-import { loadBaiduConfig, configureBaidu } from '@/utils/translator.js'
+import { loadBaiduConfig, configureBaidu, setOfflineMode } from '@/utils/translator.js'
 import { loadBaiduOCRConfig, configureBaiduOCR } from '@/utils/ocr.js'
 
 export default {
@@ -191,7 +191,7 @@ export default {
     },
     toggleOfflineMode(e) {
       this.offlineMode = e.detail.value
-      uni.setStorageSync('offline_mode', this.offlineMode)
+      setOfflineMode(this.offlineMode)
       uni.showToast({ 
         title: this.offlineMode ? '已开启离线模式' : '已关闭离线模式', 
         icon: 'success' 
@@ -272,12 +272,14 @@ export default {
     clearCache() {
       uni.showModal({
         title: '确认清除',
-        content: '确定要清除所有缓存吗？',
+        content: '确定要清除翻译缓存吗？不会影响API配置和语言包。',
         success: (res) => {
           if (res.confirm) {
-            uni.clearStorage()
+            // 只清除翻译缓存，保留API配置和语言包
+            uni.removeStorageSync('translation_cache')
+            uni.removeStorageSync('translation_history')
             this.calculateCacheSize()
-            uni.showToast({ title: '已清除', icon: 'success' })
+            uni.showToast({ title: '已清除缓存', icon: 'success' })
           }
         }
       })
