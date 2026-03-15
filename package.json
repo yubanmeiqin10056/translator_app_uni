@@ -1,0 +1,14 @@
+{
+  "name": "translator-app",
+  "version": "1.0.0",
+  "description": "安卓离线翻译应用 - uni-app 版本",
+  "main": "main.js",
+  "scripts": {},
+  "keywords": [
+    "translator",
+    "uni-app",
+    "offline"
+  ],
+  "author": "",
+  "license": "MIT"
+}

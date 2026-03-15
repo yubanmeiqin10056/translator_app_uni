@@ -1,0 +1,53 @@
+/* uni.scss - 全局样式变量 */
+
+/* 主题色 */
+$uni-primary: #6366F1;
+$uni-primary-light: #818CF8;
+$uni-primary-dark: #4F46E5;
+$uni-secondary: #8B5CF6;
+
+/* 功能色 */
+$uni-success: #10B981;
+$uni-warning: #F59E0B;
+$uni-error: #EF4444;
+$uni-info: #3B82F6;
+
+/* 文字颜色 */
+$uni-text-color: #333333;
+$uni-text-color-grey: #666666;
+$uni-text-color-placeholder: #999999;
+$uni-text-color-disable: #c0c0c0;
+
+/* 背景颜色 */
+$uni-bg-color: #ffffff;
+$uni-bg-color-grey: #f8f8f8;
+$uni-bg-color-hover: #f1f1f1;
+$uni-bg-color-mask: rgba(0, 0, 0, 0.4);
+
+/* 边框颜色 */
+$uni-border-color: #e5e5e5;
+
+/* 字体大小 */
+$uni-font-size-sm: 24rpx;
+$uni-font-size-base: 28rpx;
+$uni-font-size-lg: 32rpx;
+$uni-font-size-xl: 36rpx;
+
+/* 间距 */
+$uni-spacing-row-sm: 10rpx;
+$uni-spacing-row-base: 20rpx;
+$uni-spacing-row-lg: 30rpx;
+$uni-spacing-col-sm: 8rpx;
+$uni-spacing-col-base: 16rpx;
+$uni-spacing-col-lg: 24rpx;
+
+/* 圆角 */
+$uni-border-radius-sm: 8rpx;
+$uni-border-radius-base: 12rpx;
+$uni-border-radius-lg: 16rpx;
+$uni-border-radius-circle: 50%;
+
+/* 阴影 */
+$uni-shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+$uni-shadow-base: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+$uni-shadow-lg: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);

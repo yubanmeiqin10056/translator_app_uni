@@ -1,0 +1,75 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "离线翻译",
+        "navigationBarBackgroundColor": "#6366F1",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/text/text",
+      "style": {
+        "navigationBarTitleText": "文本翻译",
+        "navigationBarBackgroundColor": "#6366F1",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/camera/camera",
+      "style": {
+        "navigationBarTitleText": "拍照翻译",
+        "navigationBarBackgroundColor": "#6366F1",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/settings/settings",
+      "style": {
+        "navigationBarTitleText": "设置",
+        "navigationBarBackgroundColor": "#6366F1",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/language/language",
+      "style": {
+        "navigationBarTitleText": "语言包管理",
+        "navigationBarBackgroundColor": "#6366F1",
+        "navigationBarTextStyle": "white"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "离线翻译",
+    "navigationBarBackgroundColor": "#6366F1",
+    "backgroundColor": "#F8F8F8"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#999999",
+    "selectedColor": "#6366F1",
+    "borderStyle": "black",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/text/text",
+        "text": "文本"
+      },
+      {
+        "pagePath": "pages/camera/camera",
+        "text": "拍照"
+      },
+      {
+        "pagePath": "pages/settings/settings",
+        "text": "设置"
+      }
+    ]
+  }
+}
