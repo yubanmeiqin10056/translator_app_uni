@@ -1,7 +1,7 @@
 {
   "name": "离线翻译",
   "appid": "__UNI__TRANSLATOR",
-  "description": "安卓离线翻译应用 - 支持文本翻译和拍照翻译",
+  "description": "安卓离线翻译应用 - 支持文本翻译和拍照翻译，可离线使用",
   "versionName": "1.0.0",
   "versionCode": "100",
   "transformPx": false,
@@ -9,6 +9,9 @@
     "usingComponents": true,
     "nvueStyleCompiler": "uni-app",
     "compilerVersion": 3,
+    "compatible": {
+      "ignoreVersion": true
+    },
     "splashscreen": {
       "alwaysShowBeforeRender": true,
       "waiting": true,
@@ -17,7 +20,8 @@
     },
     "modules": {
       "Camera": {},
-      "Gallery": {}
+      "Gallery": {},
+      "Storage": {}
     },
     "distribute": {
       "android": {
@@ -25,13 +29,93 @@
           "<uses-permission android:name=\"android.permission.CAMERA\"/>",
           "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>",
           "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>",
-          "<uses-permission android:name=\"android.permission.INTERNET\"/>"
+          "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_WIFI_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.READ_PHONE_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.VIBRATE\"/>",
+          "<uses-permission android:name=\"android.permission.FLASHLIGHT\"/>",
+          "<uses-feature android:name=\"android.hardware.camera\"/>",
+          "<uses-feature android:name=\"android.hardware.camera.autofocus\"/>"
         ],
         "minSdkVersion": 21,
-        "targetSdkVersion": 30
+        "targetSdkVersion": 30,
+        "abiFilters": ["armeabi-v7a", "arm64-v8a"]
       },
-      "ios": {},
-      "sdkConfigs": {}
+      "ios": {
+        "idfa": false,
+        "capabilities": {
+          "entitlements": {
+            "com.apple.developer.associated-domains": []
+          }
+        },
+        "privacyDescription": {
+          "NSCameraUsageDescription": "用于拍照翻译功能",
+          "NSPhotoLibraryUsageDescription": "用于从相册选择图片进行翻译",
+          "NSPhotoLibraryAddUsageDescription": "用于保存翻译结果图片"
+        }
+      },
+      "sdkConfigs": {
+        "ad": {},
+        "payment": {},
+        "share": {},
+        "oauth": {},
+        "push": {},
+        "statics": {}
+      },
+      "icons": {
+        "android": {
+          "hdpi": "unpackage/res/icons/72x72.png",
+          "xhdpi": "unpackage/res/icons/96x96.png",
+          "xxhdpi": "unpackage/res/icons/144x144.png",
+          "xxxhdpi": "unpackage/res/icons/192x192.png"
+        },
+        "ios": {
+          "appstore": "unpackage/res/icons/1024x1024.png",
+          "ipad": {
+            "app": "unpackage/res/icons/76x76.png",
+            "app@2x": "unpackage/res/icons/152x152.png",
+            "notification": "unpackage/res/icons/20x20.png",
+            "notification@2x": "unpackage/res/icons/40x40.png",
+            "proapp@2x": "unpackage/res/icons/167x167.png",
+            "settings": "unpackage/res/icons/29x29.png",
+            "settings@2x": "unpackage/res/icons/58x58.png",
+            "spotlight": "unpackage/res/icons/40x40.png",
+            "spotlight@2x": "unpackage/res/icons/80x80.png"
+          },
+          "iphone": {
+            "app@2x": "unpackage/res/icons/120x120.png",
+            "app@3x": "unpackage/res/icons/180x180.png",
+            "notification@2x": "unpackage/res/icons/40x40.png",
+            "notification@3x": "unpackage/res/icons/60x60.png",
+            "settings@2x": "unpackage/res/icons/58x58.png",
+            "settings@3x": "unpackage/res/icons/87x87.png",
+            "spotlight@2x": "unpackage/res/icons/80x80.png",
+            "spotlight@3x": "unpackage/res/icons/120x120.png"
+          }
+        }
+      },
+      "splashscreen": {
+        "android": {
+          "hdpi": "unpackage/res/splash/480x800.png",
+          "xhdpi": "unpackage/res/splash/720x1280.png",
+          "xxhdpi": "unpackage/res/splash/1080x1920.png"
+        },
+        "ios": {
+          "storyboard": "unpackage/res/splash/LaunchScreen.storyboard"
+        }
+      }
+    },
+    "safearea": {
+      "background": "#6366F1",
+      "bottom": {
+        "offset": "auto"
+      }
+    },
+    "statusbar": {
+      "immersed": true,
+      "style": "dark",
+      "background": "#6366F1"
     }
   },
   "quickapp": {},
@@ -61,6 +145,12 @@
     },
     "router": {
       "mode": "hash"
+    },
+    "title": "离线翻译",
+    "template": "index.html",
+    "optimization": {
+      "prefetch": true,
+      "preload": true
     }
   }
 }
