@@ -1,6 +1,7 @@
 /**
  * 翻译服务模块
  * 支持百度翻译、有道翻译和离线翻译
+ * 优化版本：添加预加载、并发请求、智能缓存
  */
 
 import { showError, withRetry, showLoading, hideLoading, ErrorTypes, detectErrorType } from './errorHandler.js'
@@ -18,6 +19,18 @@ const LOCAL_API = 'http://127.0.0.1:5000/translate'
 // 离线词典存储键
 const OFFLINE_DICT_KEY = 'offline_dictionary'
 const TRANSLATION_CACHE_KEY = 'translation_cache'
+
+// 性能优化：请求队列和并发控制
+const requestQueue = []
+const MAX_CONCURRENT = 3
+let activeRequests = 0
+
+// 性能优化：内存缓存（热数据）
+const memoryCache = new Map()
+const MEMORY_CACHE_MAX = 100
+
+// 性能优化：预加载常用翻译对
+const PRELOAD_PAIRS = ['en-zh', 'zh-en', 'ja-zh', 'zh-ja']
 
 /**
  * MD5 加密（简化版）
@@ -40,49 +53,129 @@ function generateRandom() {
 }
 
 /**
- * 翻译文本
+ * 翻译文本（优化版）
  */
 export async function translate(text, from = 'auto', to = 'zh') {
   if (!text || !text.trim()) {
     return ''
   }
 
-  // 先检查本地缓存
+  const startTime = Date.now()
   const cacheKey = `${from}-${to}-${text}`
+
+  // 1. 检查内存缓存（最快）
+  if (memoryCache.has(cacheKey)) {
+    console.log(`[性能] 内存缓存命中: ${Date.now() - startTime}ms`)
+    return memoryCache.get(cacheKey)
+  }
+
+  // 2. 检查本地存储缓存
   const cachedResult = getFromCache(cacheKey)
   if (cachedResult) {
+    // 提升到内存缓存
+    setMemoryCache(cacheKey, cachedResult)
+    console.log(`[性能] 存储缓存命中: ${Date.now() - startTime}ms`)
     return cachedResult
   }
 
-  // 检查离线模式
+  // 3. 检查离线模式
   const forceOffline = uni.getStorageSync('force_offline_mode')
   
   if (forceOffline) {
-    return translateOffline(text, from, to)
+    const result = await translateOffline(text, from, to)
+    console.log(`[性能] 离线翻译完成: ${Date.now() - startTime}ms`)
+    return result
   }
 
-  // 在线翻译（带重试）
+  // 4. 在线翻译（带超时控制）
   try {
-    const result = await withRetry(
-      () => translateOnline(text, from, to),
-      { maxRetries: 2, delay: 500 }
-    )
-    // 缓存翻译结果
+    const result = await translateWithTimeout(text, from, to, 3000)
+    // 缓存结果
     saveToCache(cacheKey, result)
+    setMemoryCache(cacheKey, result)
+    console.log(`[性能] 在线翻译完成: ${Date.now() - startTime}ms`)
     return result
   } catch (e) {
-    // 在线翻译失败，显示错误并尝试离线翻译
-    const errorResult = await showError(e, { 
-      title: '翻译失败',
-      showRetry: true 
-    })
+    console.warn(`[性能] 在线翻译失败: ${Date.now() - startTime}ms`, e)
     
-    if (errorResult.retry) {
-      return translate(text, from, to)
-    }
-    
-    return translateOffline(text, from, to)
+    // 降级到离线翻译
+    const result = await translateOffline(text, from, to)
+    return result
   }
+}
+
+/**
+ * 带超时控制的翻译
+ */
+async function translateWithTimeout(text, from, to, timeout = 3000) {
+  return new Promise(async (resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('翻译超时'))
+    }, timeout)
+
+    try {
+      const result = await translateOnline(text, from, to)
+      clearTimeout(timer)
+      resolve(result)
+    } catch (e) {
+      clearTimeout(timer)
+      reject(e)
+    }
+  })
+}
+
+/**
+ * 设置内存缓存
+ */
+function setMemoryCache(key, value) {
+  if (memoryCache.size >= MEMORY_CACHE_MAX) {
+    // 删除最早的缓存
+    const firstKey = memoryCache.keys().next().value
+    memoryCache.delete(firstKey)
+  }
+  memoryCache.set(key, value)
+}
+
+/**
+ * 批量翻译（优化：并发请求）
+ */
+export async function translateBatch(texts, from = 'auto', to = 'zh') {
+  const results = []
+  
+  // 分批处理，每批最多 MAX_CONCURRENT 个
+  for (let i = 0; i < texts.length; i += MAX_CONCURRENT) {
+    const batch = texts.slice(i, i + MAX_CONCURRENT)
+    const batchResults = await Promise.all(
+      batch.map(text => translate(text, from, to).catch(() => text))
+    )
+    results.push(...batchResults)
+  }
+  
+  return results
+}
+
+/**
+ * 预加载常用翻译
+ */
+export function preloadCommonTranslations() {
+  const commonWords = {
+    'en-zh': ['hello', 'world', 'thank', 'please', 'sorry', 'yes', 'no', 'good', 'bad', 'love'],
+    'zh-en': ['你好', '世界', '谢谢', '请', '抱歉', '是', '否', '好', '坏', '爱']
+  }
+
+  PRELOAD_PAIRS.forEach(pair => {
+    if (commonWords[pair]) {
+      const [from, to] = pair.split('-')
+      commonWords[pair].forEach(word => {
+        // 检查是否已缓存
+        const cacheKey = `${from}-${to}-${word}`
+        if (!getFromCache(cacheKey)) {
+          // 异步预加载，不阻塞
+          translate(word, from, to).catch(() => {})
+        }
+      })
+    }
+  })
 }
 
 /**
@@ -116,7 +209,9 @@ async function translateWithBaidu(text, from, to) {
         salt: salt,
         sign: sign
       },
-      timeout: 10000
+      timeout: 5000,
+      enableHttp2: true,
+      enableCache: true
     })
     
     if (res.statusCode === 200 && res.data.trans_result) {
@@ -141,7 +236,8 @@ async function translateWithFreeAPI(text, from, to) {
     const res = await uni.request({
       url,
       method: 'GET',
-      timeout: 10000
+      timeout: 5000,
+      enableCache: true
     })
     
     if (res.statusCode === 200 && res.data.responseData) {
@@ -159,7 +255,7 @@ async function translateWithFreeAPI(text, from, to) {
  * 离线翻译
  */
 async function translateOffline(text, from, to) {
-  // 1. 先检查缓存
+  // 1. 检查缓存
   const cacheKey = `${from}-${to}-${text}`
   const cached = getFromCache(cacheKey)
   if (cached) {
@@ -178,7 +274,7 @@ async function translateOffline(text, from, to) {
       url: LOCAL_API,
       method: 'POST',
       data: { text, from, to },
-      timeout: 15000
+      timeout: 10000
     })
     
     if (res.statusCode === 200 && res.data.result) {
@@ -242,14 +338,16 @@ function lookupDictionary(text, from, to) {
     
     if (dict[pairKey]) {
       // 精确匹配
-      if (dict[pairKey][text]) {
-        return dict[pairKey][text]
+      if (dict[pairKey][text.toLowerCase()]) {
+        return dict[pairKey][text.toLowerCase()]
       }
       
       // 模糊匹配（单词级别）
       const words = text.split(/\s+/)
       if (words.length <= 5) {
-        const translations = words.map(word => dict[pairKey][word] || word)
+        const translations = words.map(word => 
+          dict[pairKey][word.toLowerCase()] || word
+        )
         return translations.join(' ')
       }
     }
@@ -316,6 +414,7 @@ export function getOfflineDictionaries() {
 export function clearCache() {
   try {
     uni.removeStorageSync(TRANSLATION_CACHE_KEY)
+    memoryCache.clear()
     return true
   } catch (e) {
     return false
@@ -410,11 +509,23 @@ export function loadBaiduConfig() {
   }
 }
 
-// 初始化时加载配置
+/**
+ * 获取性能统计
+ */
+export function getPerformanceStats() {
+  return {
+    memoryCacheSize: memoryCache.size,
+    memoryCacheMax: MEMORY_CACHE_MAX
+  }
+}
+
+// 初始化时加载配置并预加载
 loadBaiduConfig()
 
 export default {
   translate,
+  translateBatch,
+  preloadCommonTranslations,
   getSupportedLanguages,
   configureBaidu,
   loadBaiduConfig,
@@ -423,5 +534,6 @@ export default {
   getOfflineDictionaries,
   clearCache,
   setOfflineMode,
-  isOfflineMode
+  isOfflineMode,
+  getPerformanceStats
 }
